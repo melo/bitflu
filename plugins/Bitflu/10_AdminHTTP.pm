@@ -225,6 +225,14 @@ sub _Network_Data {
 }
 
 ##########################################################################
+# Split a buffer with a HTTP request into headers and body
+sub _SplitHttpRequest {
+  my ($self, $buff) = @_;
+  
+  return split(qr/\r\n\r\n/, $buff, 2);
+}
+
+##########################################################################
 # Accept new incoming connection
 sub _Network_Accept {
 	my($self,$sock) = @_;
