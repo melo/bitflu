@@ -106,7 +106,8 @@ sub run {
 sub HandleHttpRequest {
 	my($self, $sock) = @_;
 	my $sr = $self->{sockets}->{$sock} or $self->panic("$sock does not exist");
-	my $rq = $self->BufferToHttpHeader($sock);
+	my ($header, $body) = $self->_SplitHttpRequest($self->GetSockBuff($sock));
+	my $rq = $self->BufferToHttpHeader($header);
 	
 	my $ctype = 'application/jsonrequest';
 	my $data  = '';
@@ -372,11 +373,10 @@ sub SetSockState {
 ##########################################################################
 # Parse current buffer and return http-reference
 sub BufferToHttpHeader {
-	my($self,$sock) = @_;
-	my ($buff, undef) = $self->GetSockBuff($sock);
+	my($self,$header) = @_;
 	my $ref   = {URI=>'/', METHOD=>'GET'};
 	
-	my @lines = split(/\r\n/,$buff);
+	my @lines = split(/\r\n/,$header);
 	my $rq    = shift(@lines);
 	
 	foreach my $tag (@lines) {
