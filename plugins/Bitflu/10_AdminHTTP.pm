@@ -214,9 +214,31 @@ sub _Network_Data {
 	if($state == STATE_READHEADER) {
 		$self->AddSockBuff($sock,$buffref,$len);
 		my ($buff,$bufflen) = $self->GetSockBuff($sock);
-		if($bufflen >= 4 && substr($buff,-4,4) eq "\r\n\r\n") {
-			$self->SetSockState($sock, STATE_SENDBODY);
-			$self->HandleHttpRequest($sock);
+	  my ($header, $body) = $self->_SplitHttpRequest($buff);
+	  return unless defined $header;
+	  
+	  my ($req) = split(qr/\r?\n/, $header);
+
+		if($req =~ m/^GET /i) {
+  		$self->SetSockState($sock, STATE_SENDBODY);
+  		$self->HandleHttpRequest($sock);
+  	}
+  	elsif ($req =~ m/^POST /i) {
+  		my ($expected) = $header =~ m/^Content-Length:\s*(\d+)$/m;
+  		if (!defined $expected) {
+  		  $self->warn('Bad request, POST missing Content-Length');
+    		$self->SetSockState($sock, STATE_SENDBODY);
+  		  $self->HttpSendBadRequest($sock);
+  		}
+  		return if $expected > length($body);
+  		
+  		$self->SetSockState($sock, STATE_SENDBODY);
+  		$self->HandleHttpRequest($sock);
+		}
+		else {
+		  $self->warn('Method not supported: ' . substr($header, 0, 10) . '...');
+  		$self->SetSockState($sock, STATE_SENDBODY);
+		  $self->HttpSendMethodNotAllowed($sock);
 		}
 	}
 	else {
