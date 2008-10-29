@@ -225,11 +225,12 @@ sub _Network_Data {
   		$self->HandleHttpRequest($sock);
   	}
   	elsif ($req =~ m/^POST /i) {
-  		my ($expected) = $header =~ m/^Content-Length:\s*(\d+)$/m;
+  		my ($expected) = $header =~ m/^Content\-Length:\s*(\d+)/m;
   		if (!defined $expected) {
   		  $self->warn('Bad request, POST missing Content-Length');
     		$self->SetSockState($sock, STATE_SENDBODY);
   		  $self->HttpSendBadRequest($sock);
+  		  return;
   		}
   		return if $expected > length($body);
   		
