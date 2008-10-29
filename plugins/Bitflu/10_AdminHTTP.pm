@@ -164,6 +164,9 @@ sub HandleHttpRequest {
 	elsif($rq->{URI} =~ /^\/history\/(.+)$/) {
 		$data = $self->_JSON_HistoryAction($1);
 	}
+	elsif($rq->{METHOD} eq 'POST' && $rq->{URI} =~ /^\/new_torrent$/) {
+	  $data = $self->_JSON_NewTorrentAction($body);
+	}
 	elsif(my($xh,$xfile) = $rq->{URI} =~ /^\/getfile\/([a-z0-9]{40})\/(\d+)$/) {
 		if(my $so = $self->{super}->Storage->OpenStorage($xh)) {
 			$xfile     = abs(int($xfile-1)); # 'GUI' starts at 1 / Storage at 0
@@ -467,6 +470,30 @@ sub _HttpSendHeader {
 }
 
 
+
+##########################################################################
+# Accept a POST'ed Torrent file, and dumps it into the autoload directory
+sub _JSON_NewTorrentAction {
+  my ($self, $torrent) = @_;
+  my $ok = 0;
+  my $msg = '';
+  
+  # Create new autoload file
+  my $destfile  = sprintf("%s/%x-%x-%x.http_download", $self->{super}->Configuration->GetValue('tempdir'), $$, int(rand(0xFFFFFF)), int(time()));
+	if( open(DEST, ">", $destfile) ) {
+		print DEST $torrent;
+		close(DEST);
+		my $exe = $self->{super}->Admin->ExecuteCommand('load', $destfile);
+    $ok = 1 unless $exe->{FAILS};
+    $msg = $exe->{MSG}[0][1];
+	}
+	else {
+	  $msg = "Could not create temp file $destfile: $!";
+	}
+	
+	$msg = $self->_sEsc($msg);
+  return qq!({ ok => $ok, msg => "$msg" })!;
+}
 
 ##########################################################################
 # Return global statistics
