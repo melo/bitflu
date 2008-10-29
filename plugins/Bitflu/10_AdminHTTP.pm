@@ -398,9 +398,19 @@ sub HttpSendOkStream {
 	                              'Content-Disposition' => $args{'Content-Disposition'}, 'Content-Type'=>$args{'Content-Type'});
 }
 
+sub HttpSendBadRequest {
+	my($self, $sock, %args) = @_;
+	$self->_HttpSendHeader($sock, Scode=>400);
+}
+
 sub HttpSendNotFound {
 	my($self, $sock, %args) = @_;
 	$self->_HttpSendHeader($sock, Scode=>404);
+}
+
+sub HttpSendMethodNotAllowed {
+	my($self, $sock, %args) = @_;
+	$self->_HttpSendHeader($sock, Scode=>405);
 }
 
 sub HttpSendUnauthorized {
